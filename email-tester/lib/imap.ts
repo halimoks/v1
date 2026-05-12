@@ -74,10 +74,22 @@ async function fetchFolder(
       envelope: true,
       headers: ["received", "x-originating-ip", "x-gmail-labels", "list-unsubscribe", "x-mailer"],
       flags: true,
+      source: true,
     })) {
       const env = msg.envelope;
       const fr = env?.from?.[0];
       const headerText = msg.headers ? msg.headers.toString() : "";
+      const rawSource = msg.source ? msg.source.toString() : "";
+      // Extract HTML body from raw email source
+      let htmlBody = "";
+      const htmlMatch = rawSource.match(/Content-Type: text\/html[^\r\n]*[\r\n]+(?:Content-Transfer-Encoding:[^\r\n]*[\r\n]+)?[\r\n]*([\s\S]*?)(?=--|\z)/i);
+      if (htmlMatch) {
+        htmlBody = htmlMatch[1].trim();
+      } else {
+        // fallback: plain text
+        const plainMatch = rawSource.match(/Content-Type: text\/plain[^\r\n]*[\r\n]+(?:Content-Transfer-Encoding:[^\r\n]*[\r\n]+)?[\r\n]*([\s\S]*?)(?=--|\z)/i);
+        if (plainMatch) htmlBody = `<pre style="white-space:pre-wrap;font-family:sans-serif">${plainMatch[1].trim()}</pre>`;
+      }
       emails.push({
         uid: msg.uid,
         subject:  env?.subject ?? "(no subject)",
@@ -87,6 +99,7 @@ async function fetchFolder(
         date:     env?.date?.toISOString() ?? new Date().toISOString(),
         category: detectCategory(headerText, base),
         snippet:  "",
+        htmlBody,
       });
     }
     await client.mailboxClose();
