@@ -25,8 +25,9 @@ export interface FetchedEmail {
   senderIp: string;
   date: string;
   category: EmailCategory;
-  snippet: string;
-  isNew?: boolean;
+ snippet: string;
+  htmlBody?: string;
+  isNew?: boolean;;
 }
 
 export interface AccountResult {
